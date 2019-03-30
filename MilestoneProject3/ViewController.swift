@@ -1,13 +1,13 @@
 /*
  Load file
-    Get words
-    Get clues
-    Make dictionary
+ Get words
+ Get clues
+ Make dictionary
  
  Start level
-    Pick word
-    Put word in wordLabel with underscores
-    Put clue in clueLabel
+ Pick word
+ Put word in wordLabel with underscores
+ Put clue in clueLabel
  
  
  */
@@ -15,17 +15,17 @@
 import UIKit
 
 class ViewController: UIViewController {
-
-    var scoreLabel: UILabel!
+    
+    var wrongAnswersLabel: UILabel!
     var clueLabel: UILabel!
     var wordLabel: UILabel!
     var guessedLetters: UITextField!
     var wordBitButtons = [UIButton]()
     var selectedButtons = [UIButton]()
     
-    var score = 0 {
+    var wrongAnswers = 0 {
         didSet {
-            scoreLabel.text = "Score: \(score)"
+            wrongAnswersLabel.text = "Wrong: \(wrongAnswers)"
         }
     }
     var level = 1
@@ -35,7 +35,7 @@ class ViewController: UIViewController {
     
     
     //MARK: - UIViewController class
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -50,11 +50,11 @@ class ViewController: UIViewController {
             letters.append(Character(UnicodeScalar(i)!))
         }
         
-        scoreLabel = UILabel()
-        scoreLabel.translatesAutoresizingMaskIntoConstraints = false
-        scoreLabel.textAlignment = .right
-        scoreLabel.text = "Score: 0"
-        view.addSubview(scoreLabel)
+        wrongAnswersLabel = UILabel()
+        wrongAnswersLabel.translatesAutoresizingMaskIntoConstraints = false
+        wrongAnswersLabel.textAlignment = .right
+        wrongAnswersLabel.text = "Score: 0"
+        view.addSubview(wrongAnswersLabel)
         
         clueLabel = UILabel()
         clueLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -88,11 +88,11 @@ class ViewController: UIViewController {
         wordLabel.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
         
         NSLayoutConstraint.activate([
-            scoreLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
-            scoreLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            wrongAnswersLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+            wrongAnswersLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
             
             // pin the top of the clues label to the bottom of the score label
-            clueLabel.topAnchor.constraint(equalTo: scoreLabel.bottomAnchor),
+            clueLabel.topAnchor.constraint(equalTo: wrongAnswersLabel.bottomAnchor),
             
             // pin the leading edge of the clues label to the leading edge of our layout margins, adding 100 for some space
             clueLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor, constant: 100),
@@ -101,7 +101,7 @@ class ViewController: UIViewController {
             clueLabel.widthAnchor.constraint(equalTo: view.layoutMarginsGuide.widthAnchor, multiplier: 0.6, constant: -100),
             
             // also pin the top of the answers label to the bottom of the score label
-            wordLabel.topAnchor.constraint(equalTo: scoreLabel.bottomAnchor),
+            wordLabel.topAnchor.constraint(equalTo: wrongAnswersLabel.bottomAnchor),
             
             // make the answers label stick to the trailing edge of our layout margins, minus 100
             wordLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor, constant: -100),
@@ -188,47 +188,67 @@ class ViewController: UIViewController {
             }
             
             DispatchQueue.main.async { [weak self] in
-                let c = (self?.wordClues.count)!
-                let r = Int.random(in: 0..<c)
-                let cur = (self?.wordClues[r])!
-                self?.wordClues.remove(at: r)
-                self?.currentWordClue = cur
-                var hidden = ""
-                for _ in 0..<cur[0].count {
-                    hidden.append("?")
-                }
-                self?.wordLabel.text = hidden
-                self?.clueLabel.text = cur[1]
+                self?.chooseWord()
             }
         }
     }
     
-    func levelUp(action: UIAlertAction) {
-        level += 1
-        
-        loadLevel()
-        
+    func chooseWord(){
+        let index = Int.random(in: 0..<wordClues.count)
+        let wordClue = wordClues[index]
+        wordClues.remove(at: index)
+        currentWordClue = wordClue
+        var hiddenAnswer = ""
+        for _ in 0..<wordClue[0].count {
+            hiddenAnswer.append("?")
+        }
+        wordLabel.text = hiddenAnswer
+        clueLabel.text = wordClue[1]
+    }
+    
+    func nextWord() {
         for btn in wordBitButtons {
             btn.isHidden = false
+        }
+        
+        if wordClues.count == 0 {
+            level += 1
+            loadLevel()
+        } else {
+            chooseWord()
         }
     }
     
     
-    
-
     //MARK: - #selectors
     
     @objc func letterTapped(_ wordBitButton: UIButton) {
         guard let buttonTitle = wordBitButton.titleLabel?.text else { return }
+        
+        //track the letter
         guessedLetters.text = guessedLetters.text?.appending(buttonTitle)
         selectedButtons.append(wordBitButton)
         wordBitButton.isHidden = true
         
+        //add letter to wordLabel
+        var changed = false
         for (index, char) in currentWordClue[0].enumerated() {
             if String(char) == buttonTitle {
-                var result = wordLabel.text!
+                let result = wordLabel.text!
                 wordLabel.text = replace(myString: result, index, Character(buttonTitle))
+                changed = true
             }
+        }
+        if changed == false {
+            wrongAnswers -= 1
+        }
+        if wordLabel.text?.contains("?") == false {
+            let ac = UIAlertController(title: "Yay!", message: "You got the word!", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default, handler: { action in
+                self.nextWord()
+                self.guessedLetters.text = ""
+            }))
+            present(ac, animated: true)
         }
     }
     
@@ -238,56 +258,6 @@ class ViewController: UIViewController {
         let modifiedString = String(chars)
         return modifiedString
     }
-
-    
-//    @objc func submitTapped(_ sender: UIButton) {
-//        guard let answerText = guessedLetters.text else { return }
-//
-//        if let solutionPosition = solutionWords.firstIndex(of: answerText) {
-//            selectedButtons.removeAll()
-//
-//            var splitAnswers = wordLabel.text?.components(separatedBy: "\n")
-//            splitAnswers?[solutionPosition] = answerText
-//            wordLabel.text = splitAnswers?.joined(separator: "\n")
-//
-//            guessedLetters.text = ""
-//            score += 1
-//
-//            var canLevelUp = true
-//            for wordBitButton in wordBitButtons {
-//                if wordBitButton.isHidden == false {
-//                    canLevelUp = false
-//                }
-//            }
-//            if canLevelUp {
-//                let ac = UIAlertController(title: "Well done!", message: "Are you ready for the next level?", preferredStyle: .alert)
-//                ac.addAction(UIAlertAction(title: "Let's go!", style: .default, handler: levelUp))
-//                present(ac, animated: true)
-//            }
-//        } else {
-//            let ac = UIAlertController(title: "Incorrect", message: "Don't give up!", preferredStyle: .alert)
-//            ac.addAction(UIAlertAction(title: "OK", style: .default, handler: clearAction))
-//            present(ac, animated: true)
-//            score -= 1
-//        }
-//    }
-    
-    func clear() {
-        guessedLetters.text = ""
-        
-        for btn in selectedButtons {
-            btn.isHidden = false
-        }
-        
-        selectedButtons.removeAll()
-    }
-    
-    func clearAction(action: UIAlertAction) {
-        clear()
-    }
-    
-    @objc func clearTapped(_ sender: UIButton) {
-        clear()
-    }
 }
+
 
