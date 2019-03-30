@@ -16,6 +16,10 @@ import UIKit
 
 class ViewController: UIViewController {
     
+    enum Game: Int {
+        case WIN
+        case LOSE
+    }
     var wrongAnswersLabel: UILabel!
     var clueLabel: UILabel!
     var wordLabel: UILabel!
@@ -213,7 +217,11 @@ class ViewController: UIViewController {
         
         if wordClues.count == 0 {
             level += 1
-            loadLevel()
+            if level == 3 {
+                gameOver(outcome: .WIN)
+            }else {
+                loadLevel()
+            }
         } else {
             chooseWord()
         }
@@ -241,6 +249,9 @@ class ViewController: UIViewController {
         }
         if changed == false {
             wrongAnswers -= 1
+            if wrongAnswers == -7 {
+                gameOver(outcome: .LOSE)
+            }
         }
         if wordLabel.text?.contains("?") == false {
             let ac = UIAlertController(title: "Yay!", message: "You got the word!", preferredStyle: .alert)
@@ -252,6 +263,19 @@ class ViewController: UIViewController {
         }
     }
     
+    func gameOver(outcome: Game) {
+        let message: String
+        switch outcome {
+        case .LOSE:
+            message = "Don't give up, try again!"
+        case .WIN:
+            message = "You won! Great job!"
+        }
+        let ac = UIAlertController(title: "Game Over", message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
+    }
+    
     func replace(myString: String, _ index: Int, _ newChar: Character) -> String {
         var chars = Array(myString)     // gets an array of characters
         chars[index] = newChar
@@ -259,5 +283,7 @@ class ViewController: UIViewController {
         return modifiedString
     }
 }
+
+
 
 
