@@ -20,22 +20,28 @@ class ViewController: UIViewController {
         case WIN
         case LOSE
     }
-    var wrongAnswersLabel: UILabel!
+    var numWrongLabel: UILabel!
     var clueLabel: UILabel!
     var wordLabel: UILabel!
+    var levelLabel: UILabel!
     
     var guessedLetters: UITextField!
     
     var wordBitButtons = [UIButton]()
     var selectedButtons = [UIButton]()
     
-    var level = 1
+    var level = 1 {
+        didSet {
+            guard level < 3 else {return}
+            levelLabel.text = "Level: \(level)"
+        }
+    }
     var letters = [Character]()
     var wordClues = [[String]]()
     var currentWordClue = [String]()
-    var wrongAnswers = 0 {
+    var numWrong = 0 {
         didSet {
-            wrongAnswersLabel.text = "Wrong: \(wrongAnswers)"
+            numWrongLabel.text = "Wrong: \(numWrong)"
         }
     }
 
@@ -44,7 +50,6 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
         loadLevel()
     }
     
@@ -56,12 +61,18 @@ class ViewController: UIViewController {
             letters.append(Character(UnicodeScalar(i)!))
         }
         
-        wrongAnswersLabel = UILabel()
-        wrongAnswersLabel.translatesAutoresizingMaskIntoConstraints = false
-        wrongAnswersLabel.textAlignment = .right
-        wrongAnswersLabel.text = "Score: 0"
-        view.addSubview(wrongAnswersLabel)
-        
+        numWrongLabel = UILabel()
+        numWrongLabel.translatesAutoresizingMaskIntoConstraints = false
+        numWrongLabel.textAlignment = .right
+        numWrongLabel.text = "Wrong Answers: 0"
+        view.addSubview(numWrongLabel)
+
+        levelLabel = UILabel()
+        levelLabel.translatesAutoresizingMaskIntoConstraints = false
+        levelLabel.textAlignment = .left
+        levelLabel.text = "Level: 0"
+        view.addSubview(levelLabel)
+
         clueLabel = UILabel()
         clueLabel.translatesAutoresizingMaskIntoConstraints = false
         clueLabel.font = UIFont.systemFont(ofSize: 24)
@@ -73,7 +84,7 @@ class ViewController: UIViewController {
         wordLabel = UILabel()
         wordLabel.translatesAutoresizingMaskIntoConstraints = false
         wordLabel.font = UIFont.systemFont(ofSize: 36)
-        wordLabel.text = "ANSWER"
+        wordLabel.text = "WORD "
         wordLabel.numberOfLines = 0
         wordLabel.textAlignment = .right
         view.addSubview(wordLabel)
@@ -95,11 +106,14 @@ class ViewController: UIViewController {
         wordLabel.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
         
         NSLayoutConstraint.activate([
-            wrongAnswersLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
-            wrongAnswersLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            numWrongLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+            numWrongLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            
+            levelLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+            levelLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             
             // pin the top of the clues label to the bottom of the score label
-            clueLabel.topAnchor.constraint(equalTo: wrongAnswersLabel.bottomAnchor),
+            clueLabel.topAnchor.constraint(equalTo: numWrongLabel.bottomAnchor),
             
             // pin the leading edge of the clues label to the leading edge of our layout margins, adding 100 for some space
             clueLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor, constant: 100),
@@ -108,7 +122,7 @@ class ViewController: UIViewController {
             clueLabel.widthAnchor.constraint(equalTo: view.layoutMarginsGuide.widthAnchor, multiplier: 0.6, constant: -100),
             
             // also pin the top of the answers label to the bottom of the score label
-            wordLabel.topAnchor.constraint(equalTo: wrongAnswersLabel.bottomAnchor),
+            wordLabel.topAnchor.constraint(equalTo: numWrongLabel.bottomAnchor),
             
             // make the answers label stick to the trailing edge of our layout margins, minus 100
             wordLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor, constant: -100),
@@ -272,8 +286,8 @@ class ViewController: UIViewController {
             }
         }
         if changed == false {
-            wrongAnswers -= 1
-            if wrongAnswers == -7 {
+            numWrong -= 1
+            if numWrong == -7 {
                 gameOver(outcome: .LOSE)
             }
         }
