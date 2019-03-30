@@ -14,7 +14,7 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+final class ViewController: UIViewController {
     
     enum Game: Int {
         case WIN
@@ -25,12 +25,16 @@ class ViewController: UIViewController {
     var wordLabel: UILabel!
     var levelLabel: UILabel!
     
-    var guessedLetters: UITextField!
+    var buttonsView: UIView!
+    
+    var playAgainButton: UIButton!
+
+    var guessedTextField: UITextField!
     
     var wordBitButtons = [UIButton]()
     var selectedButtons = [UIButton]()
-    
-    var level = 1 {
+
+    var level = 0 {
         didSet {
             guard level < 3 else {return}
             levelLabel.text = "Level: \(level)"
@@ -50,7 +54,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadLevel()
+        nextWord()
     }
     
     override func loadView() {
@@ -89,21 +93,38 @@ class ViewController: UIViewController {
         wordLabel.textAlignment = .right
         view.addSubview(wordLabel)
         
-        guessedLetters = UITextField()
-        guessedLetters.textColor = UIColor.gray
-        guessedLetters.translatesAutoresizingMaskIntoConstraints = false
-        guessedLetters.placeholder = "Tap letters to guess"
-        guessedLetters.textAlignment = .center
-        guessedLetters.font = UIFont.systemFont(ofSize: 44)
-        guessedLetters.isUserInteractionEnabled = false
-        view.addSubview(guessedLetters)
+        guessedTextField = UITextField()
+        guessedTextField.textColor = UIColor.gray
+        guessedTextField.translatesAutoresizingMaskIntoConstraints = false
+        guessedTextField.placeholder = "Tap letters to guess"
+        guessedTextField.textAlignment = .center
+        guessedTextField.font = UIFont.systemFont(ofSize: 44)
+        guessedTextField.isUserInteractionEnabled = false
+        view.addSubview(guessedTextField)
         
-        let buttonsView = UIView()
+        buttonsView = UIView()
         buttonsView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(buttonsView)
         
+        playAgainButton = UIButton(type: .system)
+        playAgainButton.addTarget(self, action: #selector(playAgain), for: .touchUpInside)
+        playAgainButton.setTitle("Play Again", for: .normal)
+        playAgainButton.translatesAutoresizingMaskIntoConstraints = false
+        playAgainButton.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
+        playAgainButton.isHidden = true
+        view.addSubview(playAgainButton)
+        
         clueLabel.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
         wordLabel.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
+        levelLabel.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
+        
+        
+//        levelLabel.backgroundColor = UIColor.red
+//        clueLabel.backgroundColor = UIColor.green
+//        wordLabel.backgroundColor = UIColor.blue
+//        numWrongLabel.backgroundColor = UIColor.cyan
+//        buttonsView.backgroundColor = UIColor.magenta
+
         
         NSLayoutConstraint.activate([
             numWrongLabel.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
@@ -133,21 +154,24 @@ class ViewController: UIViewController {
             // make the answers label match the height of the clues label
             wordLabel.heightAnchor.constraint(equalTo: clueLabel.heightAnchor),
             
-            guessedLetters.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            guessedLetters.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
-            guessedLetters.topAnchor.constraint(equalTo: clueLabel.bottomAnchor, constant: 20),
+            guessedTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            guessedTextField.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
+            guessedTextField.topAnchor.constraint(equalTo: clueLabel.bottomAnchor, constant: 20),
+            
+            playAgainButton.topAnchor.constraint(equalTo: guessedTextField.bottomAnchor, constant: 20),
+            playAgainButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             buttonsView.widthAnchor.constraint(equalToConstant: 750),
             buttonsView.heightAnchor.constraint(equalToConstant: 320),
             buttonsView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            buttonsView.topAnchor.constraint(equalTo: guessedLetters.bottomAnchor, constant: 20),
-            buttonsView.bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor, constant: -20)
+            buttonsView.topAnchor.constraint(equalTo: guessedTextField.bottomAnchor, constant: 80),
+            buttonsView.bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor, constant: -20),
             
             ])
         
         // set some values for the width and height of each button
-        let width = 60
-        let height = 60
+        let width = 750/13 + 1
+        let height = width
         
         for row in 0..<2 {
             for col in 0..<13 {
@@ -240,7 +264,7 @@ class ViewController: UIViewController {
     }
     
     func gameOver(outcome: Game) {
-        view.isUserInteractionEnabled = false
+        buttonsView.isUserInteractionEnabled = false
         let message: String
         switch outcome {
         case .LOSE:
@@ -249,7 +273,9 @@ class ViewController: UIViewController {
             message = "You won! Great job!"
         }
         let ac = UIAlertController(title: "Game Over", message: message, preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        ac.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            self.playAgainButton.isHidden = false
+        }))
         present(ac, animated: true)
     }
     
@@ -268,11 +294,19 @@ class ViewController: UIViewController {
     
     //MARK: - #selectors
     
+    @objc func playAgain() {
+        buttonsView.isUserInteractionEnabled = true
+        playAgainButton.isHidden = false
+        level = 0
+        wordClues = []
+        nextWord()
+    }
+    
     @objc func letterTapped(_ wordBitButton: UIButton) {
         guard let buttonTitle = wordBitButton.titleLabel?.text else { return }
         
         //track the letter
-        guessedLetters.text = guessedLetters.text?.appending(buttonTitle)
+        guessedTextField.text = guessedTextField.text?.appending(buttonTitle)
         selectedButtons.append(wordBitButton)
         wordBitButton.isHidden = true
         
@@ -296,7 +330,7 @@ class ViewController: UIViewController {
             ac.addAction(UIAlertAction(title: "OK", style: .default, handler: { action in
                 self.hideButtons()
                 self.nextWord()
-                self.guessedLetters.text = ""
+                self.guessedTextField.text = ""
             }))
             present(ac, animated: true)
         }
