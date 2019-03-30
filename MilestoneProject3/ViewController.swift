@@ -23,20 +23,22 @@ class ViewController: UIViewController {
     var wrongAnswersLabel: UILabel!
     var clueLabel: UILabel!
     var wordLabel: UILabel!
+    
     var guessedLetters: UITextField!
+    
     var wordBitButtons = [UIButton]()
     var selectedButtons = [UIButton]()
     
+    var level = 1
+    var letters = [Character]()
+    var wordClues = [[String]]()
+    var currentWordClue = [String]()
     var wrongAnswers = 0 {
         didSet {
             wrongAnswersLabel.text = "Wrong: \(wrongAnswers)"
         }
     }
-    var level = 1
-    var letters = [Character]()
-    var wordClues = [[String]]()
-    var currentWordClue = [String]()
-    
+
     
     //MARK: - UIViewController class
     
@@ -70,13 +72,14 @@ class ViewController: UIViewController {
         
         wordLabel = UILabel()
         wordLabel.translatesAutoresizingMaskIntoConstraints = false
-        wordLabel.font = UIFont.systemFont(ofSize: 24)
-        wordLabel.text = "ANSWERS"
+        wordLabel.font = UIFont.systemFont(ofSize: 36)
+        wordLabel.text = "ANSWER"
         wordLabel.numberOfLines = 0
         wordLabel.textAlignment = .right
         view.addSubview(wordLabel)
         
         guessedLetters = UITextField()
+        guessedLetters.textColor = UIColor.gray
         guessedLetters.translatesAutoresizingMaskIntoConstraints = false
         guessedLetters.placeholder = "Tap letters to guess"
         guessedLetters.textAlignment = .center
@@ -161,7 +164,6 @@ class ViewController: UIViewController {
     
     //MARK: - ViewController class
     
-    
     func loadLevel() {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             
@@ -211,10 +213,6 @@ class ViewController: UIViewController {
     }
     
     func nextWord() {
-        for btn in wordBitButtons {
-            btn.isHidden = false
-        }
-        
         if wordClues.count == 0 {
             level += 1
             if level == 3 {
@@ -227,6 +225,32 @@ class ViewController: UIViewController {
         }
     }
     
+    func gameOver(outcome: Game) {
+        view.isUserInteractionEnabled = false
+        let message: String
+        switch outcome {
+        case .LOSE:
+            message = "Don't give up, try again!"
+        case .WIN:
+            message = "You won! Great job!"
+        }
+        let ac = UIAlertController(title: "Game Over", message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
+    }
+    
+    func replace(myString: String, _ index: Int, _ newChar: Character) -> String {
+        var chars = Array(myString)     // gets an array of characters
+        chars[index] = newChar
+        let modifiedString = String(chars)
+        return modifiedString
+    }
+
+    func hideButtons() {
+        for btn in wordBitButtons {
+            btn.isHidden = false
+        }
+    }
     
     //MARK: - #selectors
     
@@ -256,32 +280,12 @@ class ViewController: UIViewController {
         if wordLabel.text?.contains("?") == false {
             let ac = UIAlertController(title: "Yay!", message: "You got the word!", preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "OK", style: .default, handler: { action in
+                self.hideButtons()
                 self.nextWord()
                 self.guessedLetters.text = ""
             }))
             present(ac, animated: true)
         }
-    }
-    
-    func gameOver(outcome: Game) {
-        view.isUserInteractionEnabled = false
-        let message: String
-        switch outcome {
-        case .LOSE:
-            message = "Don't give up, try again!"
-        case .WIN:
-            message = "You won! Great job!"
-        }
-        let ac = UIAlertController(title: "Game Over", message: message, preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
-    }
-    
-    func replace(myString: String, _ index: Int, _ newChar: Character) -> String {
-        var chars = Array(myString)     // gets an array of characters
-        chars[index] = newChar
-        let modifiedString = String(chars)
-        return modifiedString
     }
 }
 
