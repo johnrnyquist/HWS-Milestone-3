@@ -264,6 +264,7 @@ class ViewController: UIViewController {
     }
     
     func gameOver(outcome: Game) {
+        view.isUserInteractionEnabled = false
         let message: String
         switch outcome {
         case .LOSE:
