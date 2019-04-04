@@ -233,6 +233,8 @@ final class ViewController: UIViewController {
             
             DispatchQueue.main.async { [weak self] in
                 self?.chooseWord()
+                self?.hideButtons(false)
+                
             }
         }
     }
@@ -248,6 +250,8 @@ final class ViewController: UIViewController {
         }
         wordLabel.text = hiddenAnswer
         clueLabel.text = wordClue[1]
+        hideButtons(false)
+        numWrong = 0
     }
     
     func nextWord() {
@@ -286,17 +290,20 @@ final class ViewController: UIViewController {
         return modifiedString
     }
 
-    func hideButtons() {
+    func hideButtons(_ value: Bool = true) {
         for btn in wordBitButtons {
-            btn.isHidden = false
+            btn.isHidden = value
         }
     }
     
     //MARK: - #selectors
     
     @objc func playAgain() {
+        numWrong = 0
+        hideButtons(false)
+        guessedTextField.text = ""
         buttonsView.isUserInteractionEnabled = true
-        playAgainButton.isHidden = false
+        playAgainButton.isHidden = true
         level = 0
         wordClues = []
         nextWord()
